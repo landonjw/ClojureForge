@@ -14,5 +14,4 @@ Probably not, this is highly experimental work, and likely has large performance
 
 ### Can I REPL into my server with this?
 
-There is an nREPL server initiated on server startup, but unless you are running it the server from gradle, Minecraft will be obfuscated.
-This may cause issues if you attempt to execute any code integrating with Minecraft or Forge.
+There is an nREPL server initiated on server startup, but unless you are running the server instance from the `runServer` gradle task, Minecraft will be obfuscated. This will likely cause issues if you attempt to execute any code integrating with Minecraft or Forge.
