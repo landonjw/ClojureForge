@@ -1,6 +1,6 @@
 # ClojureForge
 
-Basic Clojrue API layer for MinecraftForge development.
+Basic Clojure API layer for MinecraftForge development.
 
 ## Why?
 
