@@ -1,0 +1,108 @@
+buildscript {
+    repositories {
+        maven { url = 'https://files.minecraftforge.net/maven' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+    }
+}
+
+plugins {
+    id 'java'
+    id 'java-library'
+    id "dev.clojurephant.clojure" version "0.6.0"
+    id "com.github.johnrengelman.shadow" version "6.1.0"
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+
+version = modVersion
+group = modGroup
+archivesBaseName = modBaseName
+
+sourceCompatibility = targetCompatibility = compileJava.sourceCompatibility = compileJava.targetCompatibility = '1.8'
+
+minecraft {
+    mappings channel: 'official', version: '1.16.5'
+    runs {
+        client {
+            workingDirectory project.file('run')
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+        }
+
+        server {
+
+            // Recommended logging data for a userdev environment
+            property 'forge.logging.markers', 'SCAN,REGISTRIES,REGISTRYDUMP'
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+        }
+    }
+}
+
+repositories {
+    jcenter()
+    mavenCentral()
+    maven {
+        name = 'Clojars' // name can be ommitted, but is helpful in troubleshooting
+        url = 'https://repo.clojars.org/'
+    }
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.16.5-36.1.4'
+    implementation 'nrepl:nrepl:0.8.3'
+    implementation 'org.clojure:clojure:1.11.1'
+    implementation 'org.clojure:spec.alpha:0.2.176'
+    implementation 'org.clojure:core.specs.alpha:0.2.44'
+    devImplementation 'org.clojure:tools.namespace:1.1.0'
+}
+
+clojure {
+    builds {
+        main {
+            aotAll()
+        }
+    }
+}
+
+shadowJar {
+    dependencies {
+        include(dependency('org.clojure:tools.namespace:.*'))
+        include(dependency('org.clojure:clojure:.*'))
+        include(dependency('org.clojure:spec.alpha:.*'))
+        include(dependency('org.clojure:core.specs.alpha:.*'))
+        include(dependency('nrepl:nrepl:.*'))
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                "Specification-Title": modBaseName,
+                "Specification-Vendor": "landonjw",
+                "Specification-Version": "1", // We are version 1 of ourselves
+                "Implementation-Title": project.name,
+                "Implementation-Version": "${version}",
+                "Implementation-Vendor" :"landonjw",
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+}
+
+reobf {
+    shadowJar {}
+}
+
+build.dependsOn(reobfShadowJar)
+
+jar.finalizedBy('reobfJar')
