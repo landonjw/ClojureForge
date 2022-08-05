@@ -1,4 +1,5 @@
-(ns ca.landonjw.api.nbt)
+(ns ca.landonjw.api.nbt
+  (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT)))
 
 (defn one-of? [types val]
   (not= nil (some #(= val %) types)))
@@ -85,3 +86,59 @@
      (get-in nbt expanded-keys))))
 
 ; TODO: Add way to go from clj->nbt, with both a new nbt object and merging with an existing one
+
+(declare clj->nbt)
+
+(defn- byte-nbt [value]
+  (ByteNBT/valueOf (byte value)))
+
+(defn- int-nbt [value]
+  (IntNBT/valueOf (int value)))
+
+(defn- long-nbt [value]
+  (LongNBT/valueOf (long value)))
+
+(defn- float-nbt [value]
+  (FloatNBT/valueOf (float value)))
+
+(defn- double-nbt [value]
+  (DoubleNBT/valueOf (double value)))
+
+(defn- byte-array-nbt [value]
+  (ByteArrayNBT. (byte-array (map byte value))))
+
+(defn- string-nbt [value]
+  (StringNBT/valueOf (str value)))
+
+(defn- list-nbt [value]
+  (let [nbt (ListNBT.)
+        elements (map clj->nbt value)]
+    (doseq [element elements]
+      (.add nbt (-> nbt .size) element))
+    nbt))
+
+(defn- compound-nbt [value]
+  (let [nbt (CompoundNBT.)]
+    (doseq [key (keys value)]
+      (.put nbt (name key) (clj->nbt (get value key))))
+    nbt))
+
+(defn- int-array-nbt [value]
+  (IntArrayNBT. (int-array (map int value))))
+
+(defn- long-array-nbt [value]
+  (LongArrayNBT. (long-array (map long value))))
+
+(defn clj->nbt [{type :type value :value}]
+  (condp = type
+    :byte (byte-nbt value)
+    :int (int-nbt value)
+    :long (long-nbt value)
+    :float (float-nbt value)
+    :double (double-nbt value)
+    :byte-array (byte-array-nbt value)
+    :string (string-nbt value)
+    :list (list-nbt value)
+    :compound (compound-nbt value)
+    :int-array (int-array-nbt value)
+    :long-array (long-array-nbt value)))
