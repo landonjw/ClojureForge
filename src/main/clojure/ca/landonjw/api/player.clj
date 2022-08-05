@@ -46,7 +46,7 @@
     :spectator (GameType/SPECTATOR)
     :else nil))
 
-(defn player->map [player]
+(defn player->clj [player]
   (if (and player (instance? ServerPlayerEntity player))
     {:uuid       (-> player .getStringUUID)
      :name       (-> player .getName .getString)
