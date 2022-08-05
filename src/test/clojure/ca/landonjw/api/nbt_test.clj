@@ -202,3 +202,165 @@
       {:type :compound :value {:foo {:type :compound :value {:bar {:type :string :value "baz"}}}}} {:foo {:bar "baz"}}
       {:type :compound :value {:foo {:type :list :value []}}} {:foo []}
       {:type :compound :value {:foo {:type :list :value [{:type :int :value 123}]}}} {:foo [123]})))
+
+(deftest clj->nbt-test
+  (testing "Byte NBT"
+    (let [value 1
+          clj-nbt {:type :byte :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ByteNBT result))
+      (is (= value (.getAsByte result)))))
+
+  (testing "Short NBT"
+    (let [value 123
+          clj-nbt {:type :short :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ShortNBT result))
+      (is (= value (.getAsShort result)))))
+
+  (testing "Integer NBT"
+    (let [value 123
+          clj-nbt {:type :int :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? IntNBT result))
+      (is (= value (.getAsInt result)))))
+
+  (testing "Long NBT"
+    (let [value 123
+          clj-nbt {:type :long :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? LongNBT result))
+      (is (= value (.getAsLong result)))))
+
+  (testing "Float NBT"
+    (let [value 123.123
+          clj-nbt {:type :float :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? FloatNBT result))
+      (is (within-delta? value (.getAsFloat result)))))
+
+  (testing "Double NBT"
+    (let [value 123.123
+          clj-nbt {:type :double :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? DoubleNBT result))
+      (is (within-delta? value (.getAsDouble result)))))
+
+  (testing "String NBT"
+    (let [value "foobar"
+          clj-nbt {:type :string :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? StringNBT result))
+      (is (= value (.getAsString result)))))
+
+  (testing "Empty byte array NBT"
+    (let [value []
+          clj-nbt {:type :byte-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ByteArrayNBT result))
+      (is (= value (vec (.getAsByteArray result))))))
+
+  (testing "Byte array NBT"
+    (let [value [1 0 1 0 1]
+          clj-nbt {:type :byte-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ByteArrayNBT result))
+      (is (= value (vec (.getAsByteArray result))))))
+
+  (testing "Empty int array NBT"
+    (let [value []
+          clj-nbt {:type :int-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? IntArrayNBT result))
+      (is (= value (vec (.getAsIntArray result))))))
+
+  (testing "Int array NBT"
+    (let [value [123 321 123]
+          clj-nbt {:type :int-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? IntArrayNBT result))
+      (is (= value (vec (.getAsIntArray result))))))
+
+  (testing "Empty long array NBT"
+    (let [value []
+          clj-nbt {:type :long-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? LongArrayNBT result))
+      (is (= value (vec (.getAsLongArray result))))))
+
+  (testing "Long array NBT"
+    (let [value [123 321 123]
+          clj-nbt {:type :long-array :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? LongArrayNBT result))
+      (is (= value (vec (.getAsLongArray result))))))
+
+  (testing "Empty list NBT"
+    (let [value []
+          clj-nbt {:type :list :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ListNBT result))
+      (is (= (.size result) 0))))
+
+  (testing "List NBT with primitive NBT"
+    (let [dummy-nbt-1 {:type :string :value "foo"}
+          dummy-nbt-2 {:type :string :value "bar"}
+          value [dummy-nbt-1 dummy-nbt-2]
+          clj-nbt {:type :list :value value}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ListNBT result))
+      (is (.size result) 2)
+      (let [element-1 (.get result 0)
+            element-2 (.get result 1)]
+        (is (instance? StringNBT element-1))
+        (is (= (.getAsString element-1) "foo"))
+        (is (instance? StringNBT element-2))
+        (is (= (.getAsString element-2) "bar")))))
+
+  (testing "List NBT with nested List NBT"
+    (let [nested-list {:type :list :value []}
+          clj-nbt {:type :list :value [nested-list]}
+          result (clj->nbt clj-nbt)]
+      (is (instance? ListNBT result))
+      (is (.size result) 1)
+      (let [element (.get result 0)]
+        (is (instance? ListNBT element))
+        (is (= (.size element) 0)))))
+
+  (testing "Compound NBT with primitive NBT"
+    (let [dummy-nbt {:type :string :value "foo"}
+          clj-nbt {:type :compound :value {:test dummy-nbt}}
+          result (clj->nbt clj-nbt)]
+      (is (instance? CompoundNBT result))
+      (is (= (.size result) 1))
+      (let [element (.get result "test")]
+        (is (instance? StringNBT element))
+        (is (= (.getAsString element) "foo")))))
+
+  (testing "Compound NBT with nested list NBT"
+    (let [dummy-nbt {:type :string :value "foo"}
+          nested-list-nbt {:type :list :value [dummy-nbt]}
+          clj-nbt {:type :compound :value {:test nested-list-nbt}}
+          result (clj->nbt clj-nbt)]
+      (is (instance? CompoundNBT result))
+      (is (= (.size result) 1))
+      (let [nested-list (.get result "test")]
+        (is (instance? ListNBT nested-list))
+        (is (= (.size nested-list) 1))
+        (let [nested-string (.get nested-list 0)]
+          (is (instance? StringNBT nested-string))
+          (is (= (.getAsString nested-string) "foo"))))))
+
+  (testing "Compound NBT with nested compound NBT"
+    (let [dummy-nbt {:type :string :value "foo"}
+          nested-compound-nbt {:type :compound :value {:test dummy-nbt}}
+          clj-nbt {:type :compound :value {:nested nested-compound-nbt}}
+          result (clj->nbt clj-nbt)]
+      (is (instance? CompoundNBT result))
+      (is (= (.size result) 1))
+      (let [nested-compound (.get result "nested")]
+        (is (instance? CompoundNBT nested-compound))
+        (is (= (.size nested-compound) 1))
+        (let [nested-string (.get nested-compound "test")]
+          (is (instance? StringNBT nested-string))
+          (is (= (.getAsString nested-string) "foo")))))))
