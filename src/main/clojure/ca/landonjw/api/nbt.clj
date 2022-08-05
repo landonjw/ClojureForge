@@ -34,6 +34,13 @@
     (= tag :string) :string
     :else nil))
 
+(defn strip-types [nbt]
+  (let [generalized-type (generalized-tag-type (:type nbt))]
+    (cond
+      (= generalized-type :map) (reduce-kv (fn [acc key val] (assoc acc key (strip-types val))) {} (:value nbt))
+      (= generalized-type :generic-list) (reduce (fn [acc val] (conj acc (strip-types val))) [] (:value nbt))
+      :else (:value nbt))))
+
 (defn get-nbt-tag-type [nbt]
   (-> nbt .getId id-to-tag-type))
 
