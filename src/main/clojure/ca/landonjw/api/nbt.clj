@@ -27,7 +27,8 @@
 (defn- generalized-tag-type [tag]
   (cond
     (one-of? [:byte :short :int :long :float :double] tag) :number
-    (one-of? [:byte-array :list :int-array :long-array] tag) :list
+    (one-of? [:byte-array :int-array :long-array] tag) :primitive-list
+    (= tag :list) :generic-list
     (= tag :compound) :map
     (= tag :string) :string
     :else nil))
@@ -55,8 +56,11 @@
 (defmethod parse-nbt :number [nbt]
   (-> nbt .getAsNumber))
 
-(defmethod parse-nbt :list [nbt]
+(defmethod parse-nbt :primitive-list [nbt]
   (into [] (map parse-nbt nbt)))
+
+(defmethod parse-nbt :generic-list [nbt]
+  (into [] (map nbt->clj nbt)))
 
 (defmethod parse-nbt :string [nbt]
   (-> nbt .getAsString))
