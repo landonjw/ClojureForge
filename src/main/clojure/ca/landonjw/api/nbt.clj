@@ -1,15 +1,8 @@
 (ns ca.landonjw.api.nbt
-  (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT)))
+  (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT ShortNBT)))
 
 (defn one-of? [types val]
   (not= nil (some #(= val %) types)))
-
-(defn strip-types [nbt]
-  (let [type (:type nbt)]
-    (cond
-      (= type :compound) (reduce-kv (fn [acc key val] (assoc acc key (strip-types val))) {} (:value nbt))
-      (one-of? [:byte-array :list :int-array :long-array] type) (reduce (fn [acc val] (conj acc (strip-types val))) [] (:value nbt))
-      :else (:value nbt))))
 
 (def id-to-tag-type
   {1  :byte
@@ -99,6 +92,9 @@
 (defn- byte-nbt [value]
   (ByteNBT/valueOf (byte value)))
 
+(defn- short-nbt [value]
+  (ShortNBT/valueOf (short value)))
+
 (defn- int-nbt [value]
   (IntNBT/valueOf (int value)))
 
@@ -139,6 +135,7 @@
 (defn clj->nbt [{type :type value :value}]
   (condp = type
     :byte (byte-nbt value)
+    :short (short-nbt value)
     :int (int-nbt value)
     :long (long-nbt value)
     :float (float-nbt value)
