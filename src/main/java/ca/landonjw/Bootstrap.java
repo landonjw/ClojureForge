@@ -7,15 +7,19 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-@Mod("clojureforge")
+@Mod(Bootstrap.MOD_ID)
 public class Bootstrap
 {
+    public static final String MOD_ID = "clojureforge";
+    private final Logger logger = LogManager.getLogger(MOD_ID);
 
     public Bootstrap()
     {
         MinecraftForge.EVENT_BUS.register(this);
-        System.out.println("Bootstrapping Clojure mod...");
+        logger.info("Bootstrapping ClojureForge...");
         initializeREPL();
     }
 
