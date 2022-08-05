@@ -100,7 +100,7 @@
       (.add nbt 0 dummy-nbt-1)
       (.add nbt 1 dummy-nbt-2)
       (let [result (nbt->clj nbt)]
-        (is (= {:type :list
+        (is (= {:type  :list
                 :value [{:type :string :value "foo"} {:type :string :value "bar"}]}
                result)))))
 
@@ -109,7 +109,7 @@
           nbt (ListNBT.)]
       (.add nbt 0 nested-list)
       (let [result (nbt->clj nbt)]
-        (is (= {:type :list
+        (is (= {:type  :list
                 :value [{:type :list :value []}]}
                result)))))
 
@@ -118,7 +118,7 @@
           nbt (CompoundNBT.)]
       (.put nbt "test" dummy-nbt)
       (let [result (nbt->clj nbt)]
-        (is (= {:type :compound
+        (is (= {:type  :compound
                 :value {:test {:type :string :value "foo"}}}
                result)))))
 
@@ -129,8 +129,8 @@
       (.add nested-list-nbt 0 dummy-nbt)
       (.put nbt "test" nested-list-nbt)
       (let [result (nbt->clj nbt)]
-        (is (= {:type :compound
-                :value {:test {:type :list
+        (is (= {:type  :compound
+                :value {:test {:type  :list
                                :value [{:type :string :value "foo"}]}}}
                result)))))
 
@@ -141,9 +141,64 @@
       (.put nested-compound-nbt "test" dummy-nbt)
       (.put nbt "nested" nested-compound-nbt)
       (let [result (nbt->clj nbt)]
-        (is (= {:type :compound
-                :value {:nested {:type :compound
+        (is (= {:type  :compound
+                :value {:nested {:type  :compound
                                  :value {:test {:type :string :value "foo"}}}}}
                result))))))
 
-(deftest strip-types-test)                                  ; TODO
+(deftest strip-types-test
+  (testing "Primitive NBTs return just their value"
+    (are [nbt] (= (:value nbt) (strip-types nbt))
+      {:type :byte :value 0}
+      {:type :short :value 123}
+      {:type :int :value 123}
+      {:type :long :value 123}
+      {:type :float :value 123.123}
+      {:type :double :value 123.123}
+      {:type :string :value "foobar"}))
+
+  (testing "Primitive array NBTs return array of their values"
+    (are [nbt] (= (:value nbt) (strip-types nbt))
+      {:type :byte-array :value []}
+      {:type :byte-array :value [1 0 1 0 1]}
+      {:type :int-array :value []}
+      {:type :int-array :value [123 321 123]}
+      {:type :long-array :value []}
+      {:type :long-array :value [123 321 123]}))
+
+  (testing "List NBT returns expected value for primitives"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :list :value []} []
+      {:type :list :value [{:type :string :value "foo"}]} ["foo"]
+      {:type :list :value [{:type :int :value 123}]} [123]
+      {:type :list :value [{:type :string :value "foo"} {:type :string :value "bar"}]} ["foo" "bar"]
+      {:type :list :value [{:type :string :value "foo"} {:type :int :value 123}]} ["foo" 123]))
+
+  (testing "List NBT returns expected value for primitive arrays"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :list :value [{:type :byte-array :value [1 0 1 0 1]}]} [[1 0 1 0 1]]
+      {:type :list :value [{:type :int-array :value [123 321 123]}]} [[123 321 123]]
+      {:type :list :value [{:type :long-array :value [123 321 123]}]} [[123 321 123]]))
+
+  (testing "List NBT returns expected value for nested generic NBTs"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :list :value [{:type :compound :value {:foo {:type :string :value "bar"}}}]} [{:foo "bar"}]
+      {:type :list :value [{:type :list :value [{:type :string :value "foo"}]}]} [["foo"]]))
+
+  (testing "Compound NBT returns expected value for primitives"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :compound :value {}} {}
+      {:type :compound :value {:foo {:type :string :value "bar"}}} {:foo "bar"}
+      {:type :compound :value {:foo {:type :int :value 123} :bar {:type :int :value 321}}} {:foo 123 :bar 321}))
+
+  (testing "Compound NBT returns expected value for primitive arrays"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :compound :value {:foo {:type :byte-array :value [1 0 1 0 1]}}} {:foo [1 0 1 0 1]}
+      {:type :compound :value {:foo {:type :int-array :value [123 321 123]}}} {:foo [123 321 123]}
+      {:type :compound :value {:foo {:type :long-array :value [123 321 123]}}} {:foo [123 321 123]}))
+
+  (testing "Compound NBT returns expected value for nested generic NBTs"
+    (are [nbt expected] (= (strip-types nbt) expected)
+      {:type :compound :value {:foo {:type :compound :value {:bar {:type :string :value "baz"}}}}} {:foo {:bar "baz"}}
+      {:type :compound :value {:foo {:type :list :value []}}} {:foo []}
+      {:type :compound :value {:foo {:type :list :value [{:type :int :value 123}]}}} {:foo [123]})))
