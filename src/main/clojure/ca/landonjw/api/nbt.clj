@@ -1,8 +1,6 @@
 (ns ca.landonjw.api.nbt
+  (:require [ca.landonjw.api.collection :refer [one-of?]])
   (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT ShortNBT)))
-
-(defn one-of? [types val]
-  (not= nil (some #(= val %) types)))
 
 (def id-to-tag-type
   {1  :byte
