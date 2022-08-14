@@ -64,6 +64,7 @@ dependencies {
     implementation 'org.clojure:clojure:1.11.1'
     implementation 'org.clojure:spec.alpha:0.2.176'
     implementation 'org.clojure:core.specs.alpha:0.2.44'
+    implementation 'org.clojure:core.memoize:1.0.257'
     devImplementation 'org.clojure:tools.namespace:1.1.0'
 }
 
@@ -81,6 +82,7 @@ shadowJar {
         include(dependency('org.clojure:clojure:.*'))
         include(dependency('org.clojure:spec.alpha:.*'))
         include(dependency('org.clojure:core.specs.alpha:.*'))
+        include(dependency('org.clojure:core.memoize:.*'))
         include(dependency('nrepl:nrepl:.*'))
     }
 }
