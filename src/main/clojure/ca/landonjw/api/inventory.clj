@@ -1,15 +1,15 @@
 (ns ca.landonjw.api.inventory
-  (:require [ca.landonjw.api.item-stack :refer [item-stack->map
-                                               create-item-stack]]))
+  (:require [ca.landonjw.api.item-stack :refer [item-stack->clj ->item-stack]])
+  (:import (net.minecraft.entity.player ServerPlayerEntity)))
 
-(defn slot->item-stack [player slot]
+(defn slot->item-stack [^ServerPlayerEntity player slot]
   (let [inventory (-> player .inventory)]
     (-> (.getItem inventory slot)
-        (item-stack->map))))
+        (item-stack->clj))))
 
-(defn set-slot [player slot item-stack]
+(defn set-slot [^ServerPlayerEntity player slot item-stack]
   (let [inventory (-> player .inventory)]
-    (.setItem inventory slot (create-item-stack item-stack))))
+    (.setItem inventory slot (->item-stack item-stack))))
 
 (defn get-hot-bar [player]
   (->> (range 0 9)
@@ -50,10 +50,10 @@
 (defn set-off-hand [player item-stack]
   (set-slot player 40 item-stack))
 
-(defn get-selected [player]
+(defn get-selected [^ServerPlayerEntity player]
   (-> player .inventory .selected))
 
-(defn get-inventory [player]
+(defn get-inventory [^ServerPlayerEntity player]
   {:selected-hot-bar-index (get-selected player)
    :hot-bar (get-hot-bar player)
    :storage (get-storage player)
