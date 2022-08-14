@@ -59,7 +59,7 @@ repositories {
 }
 
 dependencies {
-    minecraft 'net.minecraftforge:forge:1.16.5-36.1.4'
+    minecraft 'net.minecraftforge:forge:1.16.5-36.2.26'
     implementation 'nrepl:nrepl:0.8.3'
     implementation 'org.clojure:clojure:1.11.1'
     implementation 'org.clojure:spec.alpha:0.2.176'
