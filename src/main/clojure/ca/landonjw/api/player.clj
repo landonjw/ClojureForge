@@ -1,18 +1,20 @@
 (ns ca.landonjw.api.player
   (:require [ca.landonjw.api.inventory :as inventory])
-  (:import (net.minecraftforge.fml.server ServerLifecycleHooks)
-           (java.util UUID)
+  (:import (java.util UUID)
            (net.minecraft.entity.player ServerPlayerEntity)
-           (net.minecraft.util.text StringTextComponent)
-           (net.minecraft.world GameType)))
+           (net.minecraft.util.text StringTextComponent ITextComponent)
+           (net.minecraft.world GameType)
+           (net.minecraftforge.fml.server ServerLifecycleHooks)
+           (net.minecraft.server MinecraftServer)
+           (net.minecraft.server.management PlayerList)
+           (net.minecraft.util.math.vector Vector3d)))
 
-(defn from-name [name]
-  (->
-    (ServerLifecycleHooks/getCurrentServer)
-    (.getPlayerList)
-    (.getPlayerByName name)))
+(defn ^ServerPlayerEntity from-name [name]
+  (-> (^MinecraftServer ServerLifecycleHooks/getCurrentServer)
+      (^PlayerList .getPlayerList)
+      (.getPlayerByName ^String name)))
 
-(defn player-list []
+(defn ^PlayerList player-list []
   (-> (ServerLifecycleHooks/getCurrentServer)
       (.getPlayerList)))
 
@@ -25,10 +27,10 @@
     (string? uuid) (.getPlayer (player-list) (str->uuid uuid))
     :else nil))
 
-(defn vec3d->vec [vec3d]
+(defn vec3d->vec [^Vector3d vec3d]
   [(.x vec3d) (.y vec3d) (.z vec3d)])
 
-(defn game-type->keyword [game-type]
+(defn game-type->keyword [^GameType game-type]
   (condp = game-type
     (GameType/NOT_SET) :not-set
     (GameType/SURVIVAL) :survival
@@ -46,8 +48,8 @@
     :spectator (GameType/SPECTATOR)
     :else nil))
 
-(defn player->clj [player]
-  (if (and player (instance? ServerPlayerEntity player))
+(defn ->clj [^ServerPlayerEntity player]
+  (if player
     {:uuid       (-> player .getStringUUID)
      :name       (-> player .getName .getString)
      :health     (-> player .getHealth)
@@ -56,10 +58,7 @@
      :game-mode  (-> player .gameMode .getGameModeForPlayer game-type->keyword)
      :inventory  (-> player inventory/get-inventory)}))
 
-(defn entry-set [map]
-  (into [] map))
-
-(defn send-message [player message]
+(defn send-message [^ServerPlayerEntity player ^ITextComponent message]
   (cond
     (map? player) (send-message (from-uuid (:uuid player)) message)
     (string? message) (send-message player (StringTextComponent. message))
@@ -68,7 +67,7 @@
 
 (defmulti apply-to-player! (fn [property _ _ _] (identity property)))
 
-(defn update-player-prop! [property player player-data update-data]
+(defn update-player-prop! [property ^ServerPlayerEntity player player-data update-data]
   (let [old-value (get player-data property)
         new-value (get update-data property)]
     (if (not= old-value new-value)
@@ -84,19 +83,19 @@
   nil)
 
 (defmethod apply-to-player! :health
-  [_ player _ new]
+  [_ ^ServerPlayerEntity player _ new]
   (.setHealth player new))
 
 (defmethod apply-to-player! :position
-  [_ player _ [x y z]]
+  [_ ^ServerPlayerEntity player _ [x y z]]
   (.setPos player x y z))
 
 (defmethod apply-to-player! :game-mode
-  [_ player _ new]
+  [_ ^ServerPlayerEntity player _ new]
   (.setGameMode player (keyword->game-type new)))
 
 (defmethod apply-to-player! :inventory
-  [_ player _ new]
+  [_ ^ServerPlayerEntity player _ new]
   (inventory/set-inventory player new))
 
 (defmethod apply-to-player! :default
