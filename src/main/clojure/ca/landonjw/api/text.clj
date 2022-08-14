@@ -60,42 +60,45 @@
     (color-keyword? keyword) (get colors keyword)
     (hex-keyword? keyword) (-> keyword keyword->rgb rgb->color)))
 
-(defn- get-format-style [format text]
+(defn- get-format-style [format ^StringTextComponent text]
   "Gets a style for the specified format keyword.
   This will inherit any styles from the given `text` argument."
   (condp = format
     :bold (-> text .getStyle (.withBold true))
-    :underline (-> text .getStyle (.withUnderlined true))
+    :underline (-> text .getStyle (.setUnderlined true))
     :strikethrough (-> text .getStyle (.setStrikethrough true))
     :obfuscated (-> text .getStyle (.setObfuscated true))))
 
-(defn- get-color-style [color text]
+(defn- get-color-style [color ^StringTextComponent text]
   "Gets a style for the specified color keyword.
   This will inherit any styles from the given `text` argument."
-  (-> text .getStyle (.withColor (get-color color))))
+  (let [color (get-color color)]
+    (cond
+      (instance? TextFormatting color) (-> text .getStyle (.withColor ^TextFormatting color))
+      (instance? Color color) (-> text .getStyle (.withColor ^Color color)))))
 
-(defn- apply-style [style text]
+(defn- apply-style [style ^StringTextComponent text]
   "Applies a style to the supplied text component, depending on the keyword supplied."
   (if (format-keyword? style)
     (.setStyle text (get-format-style style text))
     (.setStyle text (get-color-style style text))))
 
-(defn- append-text-and-style [contents text]
+(defn- append-text-and-style [contents ^StringTextComponent text]
   "Creates a new text component, applies the style of the prior text component,
   and concatenates the two components together."
   (let [sibling (StringTextComponent. contents)]
     (.setStyle sibling (.getStyle text))
     (.append text sibling)))
 
-(defn clj->text-component
+(defn ->text-component
   "Takes a vector and parses the form into a Minecraft TextComponent.
   Example vector: `[[:red \"Hello \" [:bold \"world! \"]] \"This is a test!\"]`"
   ([text]
-   (clj->text-component text (StringTextComponent. "")))
-  ([text acc]
+   (->text-component text (StringTextComponent. "")))
+  ([text ^StringTextComponent acc]
    (doseq [element text]
      (cond
-       (vector? element) (.append acc (clj->text-component element (StringTextComponent. "")))
+       (vector? element) (.append acc ^StringTextComponent (->text-component element (StringTextComponent. "")))
        (keyword? element) (apply-style element acc)
        (string? element) (append-text-and-style element acc)))
    acc))
