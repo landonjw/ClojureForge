@@ -1,6 +1,6 @@
 (ns ca.landonjw.api.nbt
   (:require [ca.landonjw.api.collection :refer [one-of?]])
-  (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT ShortNBT)))
+  (:import (net.minecraft.nbt ByteNBT IntNBT LongNBT FloatNBT DoubleNBT ByteArrayNBT StringNBT ListNBT CompoundNBT IntArrayNBT LongArrayNBT ShortNBT INBT NumberNBT CollectionNBT)))
 
 (def id-to-tag-type
   {1  :byte
@@ -32,36 +32,36 @@
       (= generalized-type :generic-list) (reduce (fn [acc val] (conj acc (strip-types val))) [] (:value nbt))
       :else (:value nbt))))
 
-(defn get-nbt-tag-type [nbt]
+(defn get-nbt-tag-type [^INBT nbt]
   (-> nbt .getId id-to-tag-type))
 
-(defn get-generalized-nbt-tag-type [nbt]
+(defn get-generalized-nbt-tag-type [^INBT nbt]
   (-> nbt .getId id-to-tag-type generalized-tag-type))
 
 (defmulti parse-nbt get-generalized-nbt-tag-type)
 
-(defn nbt->clj [nbt]
+(defn nbt->clj [^INBT nbt]
   (if (not (nil? nbt))
     (let [tag-type (get-nbt-tag-type nbt)]
       {:type tag-type :value (parse-nbt nbt)})
     nil))
 
-(defmethod parse-nbt :map [nbt]
+(defmethod parse-nbt :map [^CompoundNBT nbt]
   (let [keys (.getAllKeys nbt)
         keys-keywordized (map keyword keys)
         values (map #(nbt->clj (.get nbt %)) keys)]
     (zipmap keys-keywordized values)))
 
-(defmethod parse-nbt :number [nbt]
+(defmethod parse-nbt :number [^NumberNBT nbt]
   (-> nbt .getAsNumber))
 
-(defmethod parse-nbt :primitive-list [nbt]
+(defmethod parse-nbt :primitive-list [^CollectionNBT nbt]
   (into [] (map parse-nbt nbt)))
 
-(defmethod parse-nbt :generic-list [nbt]
+(defmethod parse-nbt :generic-list [^ListNBT nbt]
   (into [] (map nbt->clj nbt)))
 
-(defmethod parse-nbt :string [nbt]
+(defmethod parse-nbt :string [^StringNBT nbt]
   (-> nbt .getAsString))
 
 (defn- create-entry [key nbt]
