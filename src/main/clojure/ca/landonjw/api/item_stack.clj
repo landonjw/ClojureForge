@@ -5,13 +5,14 @@
            (net.minecraft.util.text StringTextComponent))
   (:require [clojure.string :refer [split]]
             [ca.landonjw.api.nbt :as nbt]
-            [clojure.data :as data]))
+            [clojure.data :as data]
+            [ca.landonjw.api.text :as text]))
 
 (defn in-map? [maybe-submap map]
   (let [[exclusive-in-submap _ _] (data/diff maybe-submap map)]
     (= exclusive-in-submap nil)))
 
-(defn- resource-location->keyword [resource-location]
+(defn- resource-location->keyword [^ResourceLocation resource-location]
   (let [namespace (.getNamespace resource-location)
         path (.getPath resource-location)]
     (keyword (str namespace "/" path))))
@@ -26,8 +27,8 @@
 (defn- get-lore-for-item-stack [item-stack]
   [])
 
-(defn item-stack->map [item-stack]
-  (if (instance? ItemStack item-stack)
+(defn item-stack->clj [^ItemStack item-stack]
+  (if item-stack
     (if (.isEmpty item-stack)
       nil
       {:item         (-> item-stack .getItem .getRegistryName resource-location->keyword)
@@ -39,40 +40,42 @@
 (defmulti apply-to-item-stack! (fn [property _ _ _] (identity property)))
 
 (defmethod apply-to-item-stack! :amount
-  [_ item-stack _ new]
+  [_ ^ItemStack item-stack _ new]
   (.setCount item-stack new))
 
 (defmethod apply-to-item-stack! :display-name
-  [_ item-stack _ new]
-  (.setHoverName item-stack (StringTextComponent. new)))
+  [_ ^ItemStack item-stack _ new]
+  (if (vector? new)
+    (.setHoverName item-stack (text/->text-component new))
+    (.setHoverName item-stack (StringTextComponent. new))))
 
 ; TODO
 (defmethod apply-to-item-stack! :lore
-  [_ item-stack _ new]
+  [_ ^ItemStack item-stack _ new]
   nil)
 
 ; TODO
 (defmethod apply-to-item-stack! :nbt
-  [_ item-stack old new]
+  [_ ^ItemStack item-stack old new]
   nil)
 
 (defmethod apply-to-item-stack! :default
   [_ _ _ _]
   nil)
 
-(defn update-item-stack-prop! [property item-stack old-data update-data]
+(defn update-item-stack-prop! [property ^ItemStack item-stack old-data update-data]
   (let [old-value (get old-data property)
         new-value (get update-data property)]
     (if (not= old-value new-value)
       (apply-to-item-stack! property item-stack old-value new-value))))
 
-(defn update-item-stack! [item-stack item-stack-map]
-  (let [old-data (item-stack->map item-stack)
+(defn update-item-stack! [^ItemStack item-stack item-stack-map]
+  (let [old-data (item-stack->clj item-stack)
         update-data item-stack-map]
     (doseq [property (keys update-data)]
       (update-item-stack-prop! property item-stack old-data update-data))))
 
-(defn create-item-stack [map]
+(defn ^ItemStack ->item-stack [map]
   (if (nil? (:item map))
     (ItemStack/EMPTY)
     (let [item-resource-loc (keyword->resource-location (:item map))
